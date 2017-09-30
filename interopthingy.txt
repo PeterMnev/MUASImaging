@@ -1,0 +1,53 @@
+def postimage(num):
+	SubmissionText = os.path.join(ImageLoc,str(num),'.txt')
+	SubmissionImage = os.path.join(ImageLoc,str(num),'.jpg')
+
+	with open(ImageInfoLoc,"r") as file: 
+		alpha = file.readline()
+		alphaColor = file.readline()
+		shape = file.readline()
+		backColor = file.readline()
+		targetType = file.readline()
+		lat = float(file.readline())
+		lng = float(file.readline())
+		deg = float(file.readline())
+
+	if (deg > 180):
+		deg = deg-360
+	elif(deg < -180):
+		deg = deg+360
+
+	if (deg > 157.5):
+		orient = 's'
+	elif(deg <= 157.5 and deg > 112.5):
+		orient = 'sw'
+	elif(deg <= 112.5 and deg > 67.5):
+		orient = 'w'
+	elif(deg <= 67.5 and deg > 22.5):
+		orient = 'nw'
+	elif(deg <= 22.5 and deg > -22.5):
+		orient = 'n'
+	elif(deg <= -22.5 and deg > -67.5):
+		orient = 'ne'
+	elif(deg <= -67.5 and deg > -112.5):
+		orient = 'e'
+	elif(deg <= -112.5 and deg > -157):
+		orient = 'se'
+	else:
+		orient = 's'
+
+
+	target = interop.Target(type=targetType,
+		latitude=lat,
+		longitude=lng,
+		orientation=orient,
+		shape=shape,
+		background_color=backColor,
+		alphanumeric=alpha,
+		alphanumeric_color=alphaColor)
+
+	target = client.post_target(target)
+
+	with open(SubmissionImage, 'rb') as f:
+   		image_data = f.read()
+   		client.put_target_image(target.id, image_data)
