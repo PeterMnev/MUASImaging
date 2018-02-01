@@ -80,29 +80,41 @@ res2 = res.reshape((img.shape))
 
 cv2.imwrite('C:\Users\peter\Documents\TestImages\RegionsOfInterest\TriColorKCluster.jpg',res2)
 #in reality one would use a histogram to find the least common color of the 3 - black shape color and letter color. This would isolate the letter.
-a = res2[42][42]
 
 forHistogram = cv2.cvtColor(res2, cv2.COLOR_BGR2GRAY)
-plt.hist(forHistogram.ravel(),256,[0,256]); plt.show()
 
-print a
+histo = plt.hist(forHistogram.ravel(),256,[0,256])
+#TO-DO find a way to find the second largest value.
+maxi = 10000
+indexi = 0
+for i in range(0,len(histo[0])):
+    b = histo[0][i]
+    if b != 0:
+        if b <= maxi:
+            indexi = i
+            maxi = b
+print indexi
+res2 = cv2.cvtColor(res2,cv2.COLOR_BGR2GRAY)
+
 i=0
 j=0
 for row in res2:
-    for row2 in row:
-        if row2[0] != a[0] :
-            res2[i][j] = [255,255,255]
+    for row2 in row: 
+        if row2 != indexi :
+            res2[i][j] = 0
         j += 1
     i += 1
     j = 0
 
+ret,res2 = cv2.threshold(res2,10,255,cv2.THRESH_BINARY_INV)
+ret,res2 = cv2.threshold(res2,10,255,cv2.THRESH_BINARY_INV)
 kernel = np.ones((3,3),np.uint8)
-res2 = cv2.dilate(res2,kernel,iterations = 1)
-kernel = np.ones((5,5),np.uint8)
-res2 = cv2.erode(res2,kernel,iterations = 1)
 
-res2 = cv2.cvtColor(res2,cv2.COLOR_BGR2GRAY)
-ret,res2 = cv2.threshold(res2,127,255,cv2.THRESH_BINARY_INV)
+res2 = cv2.erode(res2,kernel,iterations = 1)
+res2 = cv2.dilate(res2,kernel,iterations = 2)
+
+
+
 
 cv2.imwrite('C:\Users\peter\Documents\TestImages\RegionsOfInterest\AfterProcForLetter.jpg',res2)
 Base = cv2.imread('C:\Users\peter\Documents\TestImages\RegionsOfInterest\LetterI.png')
