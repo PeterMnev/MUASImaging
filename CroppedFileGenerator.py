@@ -6,67 +6,71 @@ from matplotlib import pyplot as plt
 #Kernel for dilation. Can fiddle with it but doesn't really seem to affect end result much
 kernel = np.ones((4,4),np.uint8)
 
-# List of good files: 99, 79
-img = cv2.imread('C:\Users\peter\Documents\TestImages\pic99.jpg') #pulls image
-imageNumber = 99
+#If you are on windows and you properly set up your repository in Documents\MUASImaging all you need to change is peter to your name
+initialImage = cv2.imread('C:\Users\peter\Documents\MUASImaging\TestCases\Test3.jpg') #pulls image
+imageNumber = 3 # Modify for file output
 
-imgB = cv2.medianBlur(img,5) #works okay btw res2 is the one that goes down
-imgB = cv2.morphologyEx(imgB,cv2.MORPH_OPEN,kernel)
+initialImage = cv2.medianBlur(initialImage,5) # Blurs Image in Preparation for Proc
+initialImage = cv2.morphologyEx(initialImage,cv2.MORPH_OPEN,kernel) # Morph_Open does what you want it to do
 
-res2 = imgB
+#Separates this object from initial because I need to reference the initial later. How to optimize?
+cannyImage = initialImage
 
+#This changes image into contours.
+cannyImage = cv2.Canny(cannyImage,150,350,True)
 
-#This stuff works, don't modify anything other than maybe the Canny parameters.
-#Canny-on-color works very well. Try other values for science. Will have to adjust for general use
-res2 = cv2.Canny(res2,150,350,True)
+#Dilates to thicken the contours.
 
-
-#Dilates to enhance contours, otherwise the contour-finder doesn't find them
-img2 = cv2.dilate(res2,kernel,iterations = 2)
-
-
-#Creates contours
-img4, contours, hierarchy = cv2.findContours(img2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) 
-img4 = img2
-#img4 = cv2.cvtColor(img4,cv2.COLOR_GRAY2BGR)
+#Creates the array of contours.
+#Interesting fact: if you change placeholder >>> cannyImage you get a filled shape. Unclear how reliable this would be.
+cannyImage, contours, hierarchy = cv2.findContours(cv2.dilate(cannyImage,kernel,iterations = 2), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+#Counter sort of deprecated but useful for debugging - calculate how many contours you successfully logged
 counter = 0
-goodshapes = []
+resultingContours = []
+PrevX = -420
+PrevY = -420
 #Iterates through contour list and creates files with cropped images.
 for num in range(0,len(contours)):
-    #mandatory filter or else runtime error
+
+    #mandatory filter or else runtime error - short contours dont work with ellipse function
     if len(contours[num]) > 4:
+
         ellipse = cv2.fitEllipse(contours[num])
+        X = ellipse[0][0]
+        Y = ellipse[0][1]
         #size based filtering,eventually update to incorporate altitude pixel - inch ratio in order to prevent objects that are way too small from getting caught
-        if ellipse[1][0]+ ellipse[1][1] > 80:
+        #New: Filter based on duplicity        
+        if (ellipse[1][0]+ ellipse[1][1] > 80) and ((abs(X - PrevX) > 10) or (abs(Y - PrevY) > 10)):
+
             if ellipse[1][0]+ ellipse[1][1] < 300:
+
                 #a good filter for very long and eccentric things. Reduce value in order to mandate even more circular objects
                 if (abs(ellipse[1][0] - ellipse[1][1]))/(ellipse[1][0] + ellipse[1][1]) < .4:   
+
                     area = cv2.contourArea(contours[num])
                     hull = cv2.convexHull(contours[num])
                     hull_area = cv2.contourArea(hull)
                     solidity = float(area)/hull_area
                     #some really squiggly shapes won't be accepted, unfortunately not a catch em all type filter
-                    if (solidity > .7):
+                    if solidity > .7:
+
                         counter = counter + 1
-                        #cv2.drawContours(img4,[cv2.convexHull(contours[num])],-1, (0,100, 100),3)
-                        img4 = cv2.ellipse(img4,ellipse,(0,255,0),2)
                         #This following constant should depend on elevation!
-                        kon = 60                        
-                        #this crops or your image. min max functions prevent out of bounds errors!
-                        cropped = res2[max(0,ellipse[0][1]-kon):min(ellipse[0][1]+kon,5232),max(0,ellipse[0][0]-kon):min(ellipse[0][0]+kon,3488)]
-                        oldCropped = img[max(0,ellipse[0][1]-kon):min(ellipse[0][1]+kon,5232),max(0,ellipse[0][0]-kon):min(ellipse[0][0]+kon,3488)]    
-                        cropped2 = cv2.dilate(cropped,kernel,iterations = 2)
-                        croppednew, tempconts, hierarchtemp = cv2.findContours(cropped2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-                        cv2.imwrite('C:\Users\peter\Documents\TestImages\RegionsOfInterest\Croppednew'+str(counter)+'from'+ str(imageNumber)+'.jpg',croppednew)
-
+                        elevationConstant = 60                        
+                        #this crops your image. min max functions prevent out of bounds errors!
+                        cropped = cannyImage[max(0,ellipse[0][1]-elevationConstant):min(ellipse[0][1]+elevationConstant,5232),max(0,ellipse[0][0]-elevationConstant):min(ellipse[0][0]+elevationConstant,3488)]
+                        oldCropped = initialImage[max(0,ellipse[0][1]-elevationConstant):min(ellipse[0][1]+elevationConstant,5232),max(0,ellipse[0][0]-elevationConstant):min(ellipse[0][0]+elevationConstant,3488)]    
+                        cropped, tempconts, hierarchtemp = cv2.findContours(cropped, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
                         #filters out trees basically. if there's a lot of contours in the area, says image is bad. perhaps worth experimenting with different image sizes
-                        if (len(tempconts) < 12):
-                            goodshapes = goodshapes + [cropped2]
-                            cv2.imwrite('C:\Users\peter\Documents\TestImages\RegionsOfInterest\RegionOfInterest'+str(counter)+'from'+ str(imageNumber)+'.jpg',oldCropped)
-                    #else:
-                        #img4 = cv2.ellipse(img4,ellipse,(0,255,255),2)
+                        if ((len(tempconts) < 12)):
 
-print len(goodshapes)
+                            PrevX = X
+                            PrevY = Y
+                            resultingContours = resultingContours + [cropped]
+                            cv2.imwrite('C:\Users\peter\Documents\MUASImaging\Output\OldCropped '+str(counter)+'from'+ str(imageNumber)+'.jpg',oldCropped)
+                            cv2.imwrite('C:\Users\peter\Documents\MUASImaging\Output\Cropped '+str(counter)+'from'+ str(imageNumber)+'.jpg',cropped)
+
+
 
 
 
