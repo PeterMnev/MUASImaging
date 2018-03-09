@@ -1,12 +1,14 @@
 import numpy as np
 import cv2
 from matplotlib import pyplot as plt
+plt.switch_backend('agg')
 import os
 try:
     import Image
 except ImportError:
     from PIL import Image
 import pytesseract
+import imutils
 #Kernel for dilation. Can fiddle with it but doesn't really seem to affect end result much
 kernel = np.ones((4,4),np.uint8)
 
@@ -74,7 +76,7 @@ for num in range(0,len(contours)):
                             cv2.imwrite('C:\Users\peter\Documents\MUASImaging\Output\OldCropped '+str(counter)+'from'+ str(imageNumber)+'.jpg',oldCropped)
                             cv2.imwrite('C:\Users\peter\Documents\MUASImaging\Output\Cropped '+str(counter)+'from'+ str(imageNumber)+'.jpg',cropped)
 
-###Above is the code for cropped file generation
+
 
 
 #This should be where you tesseract is stored. if not modify!
@@ -116,7 +118,7 @@ for row in dualColor:
     j = 0
 
 #Now Erode. Erode works by making darker sections smaller.
-kernel = np.ones((5,5),np.uint8)
+kernel = np.ones((3,3),np.uint8)
 dualColor = cv2.erode(dualColor, kernel, iterations = 1)
 
 #Stores the mask for future use.
@@ -139,6 +141,7 @@ cnt2 = contours[1]
 
 #Contour Comparison Function:
 Value = cv2.matchShapes(cnt1,cnt2,1,0.0)
+print "how matchy shape"
 print Value
 
 
@@ -169,7 +172,7 @@ triColor = res.reshape((masked.shape))
 #Creates a histogram
 forHistogram = cv2.cvtColor(triColor, cv2.COLOR_BGR2GRAY)
 histo = plt.hist(forHistogram.ravel(),256,[0,256])
-
+print (plt.hist(forHistogram.ravel(),256,[0,256]))
 #Identifies Least Common Color (in greys)
 maxi = 10000
 indexi = 0
@@ -196,37 +199,39 @@ for row in triColor:
     j = 0
 
 
-kernel = np.ones((3,3),np.uint8)
+kernel = np.ones((2,2),np.uint8)
 
 
 
 triColor = cv2.dilate(triColor,kernel,iterations = 1)
 
-##triColor = cv2.resize(triColor,None,fx=1.5, fy=1.5, interpolation = cv2.INTER_CUBIC)
-##
-##triColor = cv2.medianBlur(triColor,5)
-##
-##triColor = cv2.resize(triColor,None,fx=2, fy=2, interpolation = cv2.INTER_CUBIC)
-##
-##triColor = cv2.medianBlur(triColor,5)
-
-
+##triColor = imutils.rotate_bound(triColor, 270)
+##triColor = imutils.resize(triColor, 500)
+##triColor = cv2.GaussianBlur(triColor,(9,9),0)
 cv2.imwrite('C:\Users\peter\Documents\MUASImaging\Intermediates\OnlyLetters.jpg',triColor)
-
+print "which alphanumeric i found via tesseracto"
 print(pytesseract.image_to_string(Image.open('C:\Users\peter\Documents\MUASImaging\Intermediates\OnlyLetters.jpg'), config='--psm 10'))
 
+for letter in ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']:
+    
+    Base = cv2.imread('C:\Users\peter\Documents\MUASImaging\Letters\Letter'+str(letter)+'.png')
 
+    Base = cv2.cvtColor(Base,cv2.COLOR_BGR2GRAY)
 
-Base = cv2.imread('C:\Users\peter\Documents\MUASImaging\Letters\LetterJ.png')
-Base = cv2.cvtColor(Base,cv2.COLOR_BGR2GRAY)
-ignorethis, contours, hierarchy = cv2.findContours(triColor, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-print len(contours[1])
-cnt1 = contours[1]
-ignorethis, contours, hierarchy = cv2.findContours(Base, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-print len(contours[0])
-cnt2 = contours[0]
-ret = cv2.matchShapes(cnt1,cnt2,1,0.0)
-print ret
+    ret,Base = cv2.threshold(Base,127,255,cv2.THRESH_BINARY_INV) #Invert
+    
+    cv2.imwrite('C:\Users\peter\Documents\MUASImaging\Intermediates\WhatICompareTo.jpg',Base)
+    ignorethis, contours, hierarchy = cv2.findContours(triColor, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    print "number of contours rom triColor dual color image"
+    print len(contours)
+    cnt1 = contours[1]
+    ignorethis, contours, hierarchy = cv2.findContours(Base, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    print "number of contours rom base image"
+    print len(contours)
+    cnt2 = contours[1]
+    ret = cv2.matchShapes(cnt1,cnt2,1,0.0)
+    print "how matchy letter"+letter
+    print ret
 
 
 
