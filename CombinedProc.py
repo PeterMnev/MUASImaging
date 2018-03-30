@@ -13,8 +13,8 @@ import imutils
 kernel = np.ones((4,4),np.uint8)
 
 #If you are on windows and you properly set up your repository in Documents\MUASImaging all you need to change is peter to your name
-initialImage = cv2.imread('C:\Users\peter\Documents\MUASImaging\TestCases\Test3.jpg') #pulls image
-imageNumber = 3 # Modify for file output
+initialImage = cv2.imread('C:\Users\peter\Documents\MUASImaging\TestCases\Test2.jpg') #pulls image
+imageNumber = 2 # Modify for file output
 
 initialImage = cv2.medianBlur(initialImage,5) # Blurs Image in Preparation for Proc
 initialImage = cv2.morphologyEx(initialImage,cv2.MORPH_OPEN,kernel) # Morph_Open does what you want it to do
@@ -73,17 +73,17 @@ for num in range(0,len(contours)):
                             PrevX = X
                             PrevY = Y
                             resultingContours = resultingContours + [cropped]
-                            cv2.imwrite('C:\Users\peter\Documents\MUASImaging\Output\OldCropped '+str(counter)+'from'+ str(imageNumber)+'.jpg',oldCropped)
-                            cv2.imwrite('C:\Users\peter\Documents\MUASImaging\Output\Cropped '+str(counter)+'from'+ str(imageNumber)+'.jpg',cropped)
+                            cv2.imwrite('C:\Users\peter\Documents\MUASImaging\Output\OldCropped'+str(counter)+'from'+ str(imageNumber)+'.jpg',oldCropped)
+                            cv2.imwrite('C:\Users\peter\Documents\MUASImaging\Output\Cropped'+str(counter)+'from'+ str(imageNumber)+'.jpg',cropped)
 
 
 
 
-#This should be where you tesseract is stored. if not modify!
+#This should be where your tesseract is stored. if not modify!
 pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files (x86)\\Tesseract-OCR\\tesseract.exe'
 
 #This is the initial image pull
-initialImage = cv2.imread('C:\Users\peter\Documents\MUASImaging\Output\OldCropped 1from3.jpg') #pulls imageZ = initialImage.reshape((-1,3))
+initialImage = cv2.imread('C:\Users\peter\Documents\MUASImaging\Output\OldCropped1from2.jpg') #pulls imageZ = initialImage.reshape((-1,3))
 
 ##############PART ONE################
 ###########SHAPE RECOGNITION##########
@@ -148,7 +148,7 @@ print Value
 
 ################PART TWO################
 ##########CHARACTER CLEANUP FOR TESSERACT#############
-initialImage = cv2.imread('C:\Users\peter\Documents\MUASImaging\Output\OldCropped 1from3.jpg')
+initialImage = cv2.imread('C:\Users\peter\Documents\MUASImaging\Output\OldCropped1from2.jpg')
 mask = cv2.imread('C:\Users\peter\Documents\MUASImaging\Intermediates\Mask.jpg')
 
 kernel = np.ones((5,5),np.uint8)
