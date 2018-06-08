@@ -9,12 +9,14 @@ except ImportError:
     from PIL import Image
 import pytesseract
 import imutils
+
+
 #Kernel for dilation. Can fiddle with it but doesn't really seem to affect end result much
 kernel = np.ones((4,4),np.uint8)
 
 #If you are on windows and you properly set up your repository in Documents\MUASImaging all you need to change is peter to your name
-initialImage = cv2.imread('C:\Users\peter\Documents\MUASImaging\TestCases\Test2.jpg') #pulls image
-imageNumber = 2 # Modify for file output
+initialImage = cv2.imread('C:\Users\peter\Documents\MUASImaging\TestCases\Test5.jpg') #pulls image
+imageNumber = 5 # Modify for file output
 
 initialImage = cv2.medianBlur(initialImage,5) # Blurs Image in Preparation for Proc
 initialImage = cv2.morphologyEx(initialImage,cv2.MORPH_OPEN,kernel) # Morph_Open does what you want it to do
@@ -32,10 +34,15 @@ cannyImage = cv2.Canny(cannyImage,150,350,True)
 cannyImage, contours, hierarchy = cv2.findContours(cv2.dilate(cannyImage,kernel,iterations = 2), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 #Counter sort of deprecated but useful for debugging - calculate how many contours you successfully logged
 counter = 0
+
+cv2.imwrite('C:\Users\peter\Documents\MUASImaging\Intermediates\Contours.jpg', cv2.drawContours(cannyImage, contours, -1, (0,255,0), 3))
+
 resultingContours = []
+resulCont = []
 PrevX = -420
 PrevY = -420
 #Iterates through contour list and creates files with cropped images.
+
 for num in range(0,len(contours)):
 
     #mandatory filter or else runtime error - short contours dont work with ellipse function
@@ -59,7 +66,7 @@ for num in range(0,len(contours)):
                     solidity = float(area)/hull_area
                     #some really squiggly shapes won't be accepted, unfortunately not a catch em all type filter
                     if solidity > .7:
-
+                        
                         counter = counter + 1
                         #This following constant should depend on elevation!
                         elevationConstant = 60                        
@@ -69,12 +76,14 @@ for num in range(0,len(contours)):
                         cropped, tempconts, hierarchtemp = cv2.findContours(cropped, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
                         #filters out trees basically. if there's a lot of contours in the area, says image is bad. perhaps worth experimenting with different image sizes
                         if ((len(tempconts) < 12)):
-
+                            print("foundd")               
                             PrevX = X
                             PrevY = Y
-                            resultingContours = resultingContours + [cropped]
-                            cv2.imwrite('C:\Users\peter\Documents\MUASImaging\Output\OldCropped'+str(counter)+'from'+ str(imageNumber)+'.jpg',oldCropped)
-                            cv2.imwrite('C:\Users\peter\Documents\MUASImaging\Output\Cropped'+str(counter)+'from'+ str(imageNumber)+'.jpg',cropped)
+                            print oldCropped.size
+                            cv2.imwrite('C:\Users\peter\Documents\MUASImaging\Output\OldyCropped'+str(counter)+'from'+ str(imageNumber)+'.jpg',oldCropped)
+                            cv2.imwrite('C:\Users\peter\Documents\MUASImaging\Output\Croppedy'+str(counter)+'from'+ str(imageNumber)+'.jpg',cropped)
+
+
 
 
 
@@ -83,7 +92,7 @@ for num in range(0,len(contours)):
 pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files (x86)\\Tesseract-OCR\\tesseract.exe'
 
 #This is the initial image pull
-initialImage = cv2.imread('C:\Users\peter\Documents\MUASImaging\Output\OldCropped1from2.jpg') #pulls imageZ = initialImage.reshape((-1,3))
+initialImage = cv2.imread('C:\Users\peter\Documents\MUASImaging\Output\OldyCropped2from5.jpg') #pulls imageZ = initialImage.reshape((-1,3))
 
 ##############PART ONE################
 ###########SHAPE RECOGNITION##########
@@ -99,6 +108,7 @@ ret, label, center = cv2.kmeans(Z,K,None,criteria,10,cv2.KMEANS_RANDOM_CENTERS)
 center = np.uint8(center)
 res = center [label.flatten()]
 dualColor = res.reshape((initialImage.shape))
+cv2.imwrite('C:\Users\peter\Documents\MUASImaging\Intermediates\AwesomeDual.jpg',dualColor)
 
 #Begin color formatting
 #Gets the color of the pixel in the top-left corner
@@ -110,7 +120,7 @@ j = 0
 for row in dualColor:
     for row2 in row:
         if row2[2] == a:
-            dualColor[i][j] = [255,255,255]
+            dualColor[i][j] = [200,200,200]
         else:
             dualColor[i][j] = [0,0,0]
         j += 1
@@ -124,8 +134,8 @@ dualColor = cv2.erode(dualColor, kernel, iterations = 1)
 #Stores the mask for future use.
 cv2.imwrite('C:\Users\peter\Documents\MUASImaging\Intermediates\Mask.jpg',dualColor)
 #Get shape
-#Ideally you would loop through them hehe
-compareTo = cv2.imread('C:\Users\peter\Documents\MUASImaging\Shapes\quarter_circle.png')
+#Ideally you would loop through them
+compareTo = cv2.imread('C:\Users\peter\Documents\MUASImaging\Shapes\circle.png')
 #################TODO: MAKE A FILE WITH CONTOURS PREPARED AS ARRAYS#############
 dualColor = cv2.cvtColor(dualColor,cv2.COLOR_BGR2GRAY)
 compareTo = cv2.cvtColor(compareTo,cv2.COLOR_BGR2GRAY)
@@ -135,10 +145,11 @@ ret,compareTo = cv2.threshold(compareTo,127,255,cv2.THRESH_BINARY_INV)
 
 #Contours Are Made - ideally only one would be made
 ignorethis, contours, hierarchy = cv2.findContours(dualColor, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+print len(contours)
 cnt1 = contours[1]
 ignorethis, contours, hierarchy = cv2.findContours(compareTo, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 cnt2 = contours[1]
-
+print len(contours)
 #Contour Comparison Function:
 Value = cv2.matchShapes(cnt1,cnt2,1,0.0)
 print "how matchy shape"
@@ -148,8 +159,8 @@ print Value
 
 ################PART TWO################
 ##########CHARACTER CLEANUP FOR TESSERACT#############
-initialImage = cv2.imread('C:\Users\peter\Documents\MUASImaging\Output\OldCropped1from2.jpg')
-mask = cv2.imread('C:\Users\peter\Documents\MUASImaging\Intermediates\Mask.jpg')
+initialImage = cv2.imread('C:\Users\peter\Documents\MUASImaging\Output\OldyCropped2from5.jpg')
+mask = cv2.imread('C:\Users\peter\Documents\MUASImaging\Intermediates\Mask.jpg')    
 
 kernel = np.ones((5,5),np.uint8)
 mask = cv2.dilate(mask,kernel,iterations = 1)
@@ -168,11 +179,11 @@ ret, label, center = cv2.kmeans(Z,K,None,criteria,10,cv2.KMEANS_RANDOM_CENTERS)
 center = np.uint8(center)
 res = center [label.flatten()]
 triColor = res.reshape((masked.shape))
-
+cv2.imwrite('C:\Users\peter\Documents\MUASImaging\Intermediates\ColoredTripleColor.jpg',triColor)
 #Creates a histogram
 forHistogram = cv2.cvtColor(triColor, cv2.COLOR_BGR2GRAY)
 histo = plt.hist(forHistogram.ravel(),256,[0,256])
-print (plt.hist(forHistogram.ravel(),256,[0,256]))
+
 #Identifies Least Common Color (in greys)
 maxi = 10000
 indexi = 0
@@ -184,14 +195,14 @@ for i in range(0,len(histo[0])):
             maxi = b
 
 triColor = cv2.cvtColor(triColor,cv2.COLOR_BGR2GRAY)
-
+cv2.imwrite('C:\Users\peter\Documents\MUASImaging\Intermediates\Awesome.jpg',triColor)
 #Makes Everything but center letter white, which in turn turns black.
 i=0
 j=0
 for row in triColor:
     for row2 in row: 
         if row2 != indexi :
-            triColor[i][j] = 255
+            triColor[i][j] = 200
         else:
             triColor[i][j]=0
         j += 1
@@ -205,12 +216,12 @@ kernel = np.ones((2,2),np.uint8)
 
 triColor = cv2.dilate(triColor,kernel,iterations = 1)
 
-##triColor = imutils.rotate_bound(triColor, 270)
-##triColor = imutils.resize(triColor, 500)
-##triColor = cv2.GaussianBlur(triColor,(9,9),0)
+#triColor = imutils.rotate_bound(triColor, 270)
+#riColor = imutils.resize(triColor, 500)
+#triColor = cv2.GaussianBlur(triColor,(9,9),0)
 cv2.imwrite('C:\Users\peter\Documents\MUASImaging\Intermediates\OnlyLetters.jpg',triColor)
-print "which alphanumeric i found via tesseracto"
-print(pytesseract.image_to_string(Image.open('C:\Users\peter\Documents\MUASImaging\Intermediates\OnlyLetters.jpg'), config='--psm 10'))
+
+
 
 for letter in ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']:
     
@@ -230,7 +241,7 @@ for letter in ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','
     print len(contours)
     cnt2 = contours[1]
     ret = cv2.matchShapes(cnt1,cnt2,1,0.0)
-    print "how matchy letter"+letter
+    print "How much does it match"+letter
     print ret
 
 

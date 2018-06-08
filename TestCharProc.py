@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 import os
 
 triColor = cv2.imread('C:\Users\peter\Documents\MUASImaging\Intermediates\OnlyLetters.jpg')
-Base = cv2.imread('C:\Users\peter\Documents\MUASImaging\Letters\LetterE.png')
+Base = cv2.imread('C:\Users\peter\Documents\MUASImaging\Letters\LetterU.png')
 triColor = cv2.cvtColor(triColor,cv2.COLOR_BGR2GRAY)
 
 (thresh, triColor) = cv2.threshold(triColor, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
