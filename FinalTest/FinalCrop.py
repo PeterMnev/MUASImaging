@@ -15,7 +15,7 @@ imIn = (args.string)
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!#
 #you need to change this depending on where you put the script itself, the folders where the images are being put into, and which folder you can output to
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!#
-print ("hello")
+
 print (imIn)
 
 
@@ -24,14 +24,17 @@ imOut = (os.path.dirname(os.path.abspath(__file__)))
 
 
 #Kernel for dilation. Can fiddle with it but doesn't really seem to affect end result much
-print ("set kernel")
+
 kernel = np.ones((5,5),np.uint8)
-imageNumber = 1
-print ("outside try")
+splits = imIn.split("\\")
+imageNumber = splits[-1]
+
 #If you are on windows and you properly set up your repository in Documents\MUASImaging all you need to change is peter to your name
 try:	
         initialImage = cv2.imread(imIn) #pulls image
-        print (initialImage)
+        height, width = initialImage.shape[:2]
+        print ("height: " + str(height))
+        print ("width: " + str(width))
         initialImage = cv2.medianBlur(initialImage,5) # Blurs Image in Preparation for Proc
         initialImage = cv2.morphologyEx(initialImage,cv2.MORPH_OPEN,kernel) # Morph_Open does what you want it to do
 
@@ -86,18 +89,19 @@ try:
                                 #This following constant should depend on elevation!
                                 elevationConstant = 60                        
                                 #this crops your image. min max functions prevent out of bounds errors!
-                                cropped = cannyImage[max(0,int(ellipse[0][1])-elevationConstant):min(int(ellipse[0][1])+elevationConstant,5232),max(0,int(ellipse[0][0])-elevationConstant):min(int(ellipse[0][0])+elevationConstant,3488)]
-                                oldCropped = initialImage[max(0,int(ellipse[0][1])-elevationConstant):min(int(ellipse[0][1])+elevationConstant,5232),max(0,int(ellipse[0][0])-elevationConstant):min(int(ellipse[0][0])+elevationConstant,3488)]    
+                                cropped = cannyImage[max(0,int(ellipse[0][1])-elevationConstant):min(int(ellipse[0][1])+elevationConstant,height),max(0,int(ellipse[0][0])-elevationConstant):min(int(ellipse[0][0])+elevationConstant,width)]
+                                oldCropped = initialImage[max(0,int(ellipse[0][1])-elevationConstant):min(int(ellipse[0][1])+elevationConstant,height),max(0,int(ellipse[0][0])-elevationConstant):min(int(ellipse[0][0])+elevationConstant,width)]    
                                 cropped, tempconts, hierarchtemp = cv2.findContours(cropped, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
                                 #filters out trees basically. if there's a lot of contours in the area, says image is bad. perhaps worth experimenting with different image sizes
                                 if ((len(tempconts) < 12)):
                                     print("Region Of Interest Found")               
                                     PrevX = X
                                     PrevY = Y
-                                    print (oldCropped.size)
-                                    cv2.imwrite(imOut + 'OriginalCropped'+str(counter)+'from'+ str(imageNumber)+'.jpg',oldCropped)
-                                    cv2.imwrite(imOut + 'Cropped'+str(counter)+'from'+ str(imageNumber)+'.jpg',cropped)
+                                    print ("writing to:")
+                                    print (imOut)
+                                    cv2.imwrite(imOut + '\OriginalCropped'+str(counter)+'from'+ str(imageNumber)+'.jpg',oldCropped)
+                                    cv2.imwrite(imOut + '\Cropped'+str(counter)+'from'+ str(imageNumber)+'.jpg',cropped)
 except:
         print ("Failed to find image with number " + str(imageNumber))
         print (sys.exc_info()[0])
-imageNumber = int(imageNumber) + 1
+
